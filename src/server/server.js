@@ -5,12 +5,15 @@ import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
 import compress from 'compression';
 import DocumentMeta from 'react-document-meta';
+import 'ejs';
+
 
 // 服务端渲染依赖
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 import { StaticRouter, matchPath } from 'react-router';
 import { Provider } from 'react-redux';
+import Loadable from 'react-loadable';
 
 // 路由配置
 import configureStore from '../store';
@@ -23,22 +26,33 @@ import { saveAccessToken, saveUserInfo } from '../actions/user';
 // 配置
 import { port, auth_cookie_name } from '../../config';
 import sign from './sign';
-import webpackHotMiddleware from './webpack-hot-middleware';
+// import webpackHotMiddleware from './webpack-hot-middleware';
 
 const app = express();
-
 
 // ***** 注意 *****
 // 不要改变如下代码执行位置，否则热更新会失效
 // 开发环境开启修改代码后热更新
-if (process.env.NODE_ENV === 'development') webpackHotMiddleware(app);
 
 
+// if (process.env.NODE_ENV === 'development') {
+  // webpackHotMiddleware(app);
+// }
+
+
+// console.log(process.env.NODE_ENV);
+
+// app.set("view engine","ejs");
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(compress());
-app.use(express.static(__dirname + '/../../dist'));
+// app.use(express.static('./dist'));
+app.use(express.static('./dist/client'));
+// app.use(express.static('./'));
+
+// console.log(express.static(__dirname + '/dist'));
+
 
 
 
@@ -78,15 +92,8 @@ app.get('*', async (req, res) => {
     }
   })
 
-  /*
-  let context = {};
-
-  // 加载页面分片
-  context = await _route.component.load({ store, match: _match });
-  */
-
   let context = {
-    // code
+    code: 200
     // url
   };
 
@@ -101,13 +108,29 @@ app.get('*', async (req, res) => {
     });
   }
 
-  if (_route.component.load) {
-    // 在服务端加载异步组件
-    context = await loadAsyncRouterComponent();
+  // console.log(_route.component);
+  // console.log(_route.component.loadData);
+
+  if (_route.loadData) {
+    context = await _route.loadData({ store, match: _match });
+    // console.log(context);
   }
+
+  await _route.component.preload();
+
+  // await Loadable.preloadAll();
+
+  // if (_route.component.load || _route.loadData) {
+    // 在服务端加载异步组件
+    // context = await loadAsyncRouterComponent();
+  // }
+
+
 
   // 获取路由dom
   const _Router = router.dom;
+
+  // console.log(_Router);
 
   let html = ReactDOMServer.renderToString(
     <Provider store={store}>
@@ -128,7 +151,8 @@ app.get('*', async (req, res) => {
     });
   } else {
     res.status(context.code);
-    res.render('../dist/index.ejs', { html, reduxState, meta });
+    res.render('../dist/server/index.ejs', { html, reduxState, meta });
+    // res.render('../dist/index.ejs', { html, reduxState, meta });
   }
 
   res.end();

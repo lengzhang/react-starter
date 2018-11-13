@@ -7,7 +7,7 @@ let config = {
   // 域名
   host: 'localhost',
 
-  //  服务端口
+  // 服务端口
   port: 4000,
 
   // 登录token，cookie 的名称
@@ -20,6 +20,7 @@ let config = {
   // 生成效果如：//localhost:4000/app.bundle.js
   public_path: '//localhost:4000',
 }
+
 
 // 开发环境配置
 if (process.env.NODE_ENV == 'development') {
